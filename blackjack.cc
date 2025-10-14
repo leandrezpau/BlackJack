@@ -18,7 +18,7 @@ enum CardType {
 struct Card {
   int num;
   CardType type;
-  bool shuffled;
+  bool revealed;
 };
 
 struct Deck {
@@ -26,15 +26,30 @@ struct Deck {
   const static int kNCards = 13;
   const static int KTotalCards = kNSuits * kNCards;
 
-  Card cards[kNSuits][kNCards];
-  Card shuffled_Deck[kNSuits * kNCards];
+  Card cards[kNSuits * kNCards];
 };
 
+struct Hand {
+  Card* cards;
+  int TotalScore(Card* cards);
+}
+
+struct Player {
+  Hand* hand;
+}
+
+struct Dealer {
+  Deck deck;
+  Hand hand;
+}
+
+
+
+/*
 void InitCards(Deck& deck);
 void Shuffle(Deck& deck);
 
 int main(){
-  Deck deck;
   srand(time(NULL));
   
   InitCards(deck);
@@ -83,3 +98,5 @@ void Shuffle(Deck& deck){
     deck.cards[suits][number].shuffled = true;
   }
 }
+
+*/
