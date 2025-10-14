@@ -24,7 +24,7 @@ struct Card {
 struct Deck {
   const static int kNSuits = 4;
   const static int kNCards = 13;
-  const static int KTotalCards = kNSuits * kNCards;
+  const static int kTotalCards = kNSuits * kNCards;
 
   Card cards[kNSuits * kNCards];
 };
@@ -32,18 +32,16 @@ struct Deck {
 struct Hand {
   Card* cards;
   int TotalScore(Card* cards);
-}
+};
 
 struct Player {
   Hand* hand;
-}
+};
 
-struct Dealer {
+struct Crupier {
   Deck deck;
   Hand hand;
-}
-
-
+};
 
 /*
 void InitCards(Deck& deck);
@@ -51,52 +49,63 @@ void Shuffle(Deck& deck);
 
 int main(){
   srand(time(NULL));
-  
+  Deck deck;
   InitCards(deck);
   Shuffle(deck);
-  
+  for(int i = 0; i < Deck::kTotalCards; i++){
+    printf("%d\n",deck.cards[i].num);
+  }
+  return 0;
 }
 
 void InitCards(Deck& deck){
-  for(int i = 0; i < Deck::kNSuits; i++){
-    for(int e = 0; e < Deck::kNCards; e++){
+  for(int e = 0; e < Deck::kNSuits; e++){
+    for(int i = 0; i < Deck::kNCards; i++){
 
-      deck.cards[i][e].type = CardType(i);
-      deck.cards[i][e].shuffled = false;
+      deck.cards[i + e * Deck::kNCards].type = CardType(i);
+      deck.cards[i + e * Deck::kNCards].revealed = false;
       
-      switch(e){
+      switch(i){
         case 10:{
-          deck.cards[i][e].num = J;
+          deck.cards[i + e * Deck::kNCards].num = J;
           break;
         }
         case 11:{
-          deck.cards[i][e].num = Q;
+          deck.cards[i + e * Deck::kNCards].num = Q;
           break;
         }
         case 12:{
-          deck.cards[i][e].num = K;
+          deck.cards[i + e * Deck::kNCards].num = K;
           break;
         }
         default:{
-          deck.cards[i][e].num = e + 1;
+          deck.cards[i + e * Deck::kNCards].num = i + 1;
           break;
         }
       }
     }
   }
 }
-
 void Shuffle(Deck& deck){
-  for(int i = 0; i < Deck::KTotalCards; i++){
+  //Getting a record to check if that card is shuffled
+  bool shuffled[Deck::kTotalCards];
+  for(int i = 0; i < Deck::kTotalCards; i++){
+    shuffled[i] = false;
+  }
+
+  for(int i = 0; i < Deck::kTotalCards; i++){
     int suits, number;
     do{
       suits = rand() % Deck::kNSuits;
       number = rand() % Deck::kNCards;
-    }while(deck.cards[suits][number].shuffled == true);
+    }while(shuffled[i] == true);
 
-    deck.shuffled_Deck[i] = deck.cards[suits][number];
-    deck.cards[suits][number].shuffled = true;
+    //Swapping both cards
+    Card card_1 = deck.cards[i];
+    Card card_2 = deck.cards[number + suits * Deck::kNSuits];
+
+    deck.cards[i] = card_2;
+    deck.cards[number + suits * Deck::kNSuits] = card_1; 
   }
 }
-
 */
