@@ -58,7 +58,7 @@ void InitGame(Player** player, Crupier &crupier, int numPlayers);
 void InitCards(Deck& deck);
 void ShuffleCards(Deck& deck);
 
-void GiveHand(Player* player, Crupier& crupier, bool started, int& currentCard, int numPlayers);
+void GiveHand(Player* player, Crupier& crupier, bool& started, int& currentCard, int numPlayers);
 
 void FreeMem(Player* player, int numPlayers);
 
@@ -75,6 +75,8 @@ int main(){
       InitCards(crupier.deck);
       InitGame(&player, crupier, numPlayers);
       ShuffleCards(crupier.deck);
+
+      gamestate = GameState::kPlaying;
       break;
     }
     case GameState::kPlaying:{
@@ -161,16 +163,17 @@ void ShuffleCards(Deck& deck){
   }
 }
 
-void GiveHand(Player* player, Crupier& crupier, bool started, int& currentCard, int numPlayers){
+void GiveHand(Player* player, Crupier& crupier, bool& started, int& currentCard, int numPlayers){
   if(!started){
     ShuffleCards(crupier.deck);
 
-    //*crupier.hand.(cards + currentCard) = crupier.deck.cards[currentCard++];
+    crupier.hand.cards[currentCard] = crupier.deck.cards[currentCard++];
 
     for(int i = 0; i < numPlayers; i++){
       (player + i)->hand->cards[currentCard] = crupier.deck.cards[currentCard++];
     }
-    
+
+    started = true;
   }
 }
 
