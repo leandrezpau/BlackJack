@@ -69,7 +69,7 @@ int main(){
   Crupier crupier;
   Player* player;
   GameState gamestate = GameState::kStarting;
-
+  //trucha
   switch(gamestate){
     case GameState::kStarting:{
       InitCards(crupier.deck);
