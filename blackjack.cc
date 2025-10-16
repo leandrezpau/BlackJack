@@ -4,9 +4,9 @@
 #include "time.h"
 
 #define A 1
-#define J 10 
-#define Q 10 
-#define K 10 
+#define J 10
+#define Q 10
+#define K 10
 
 enum CardType {
   kHeart_Type = 0,
@@ -14,9 +14,15 @@ enum CardType {
   kClub_Type,
   kSpades_Type
 };
+enum GameState {
+  kStarting = 0,
+  kPlaying,
+  kWinned,
+  kLost
+};
 
 struct Card {
-  int num;
+  char num;
   CardType type;
   bool revealed;
 };
@@ -30,11 +36,16 @@ struct Deck {
 };
 
 struct Hand {
+  int numCards;
+
   Card* cards;
+
   int TotalScore(Card* cards);
 };
 
 struct Player {
+  int numHands;
+
   Hand* hand;
 };
 
@@ -43,21 +54,57 @@ struct Crupier {
   Hand hand;
 };
 
-/*
+void InitGame(Player** player, Crupier &crupier, int numPlayers);
 void InitCards(Deck& deck);
 void Shuffle(Deck& deck);
 
+void GiveHand(Player* player, Crupier& crupier, bool started, int& currentCard, int numPlayers);
+
+void FreeMem(Player* player);
+
 int main(){
   srand(time(NULL));
-  Deck deck;
-  InitCards(deck);
-  Shuffle(deck);
-  for(int i = 0; i < Deck::kTotalCards; i++){
-    printf("%d\n",deck.cards[i].num);
+  int numPlayers = 1;
+
+  Crupier crupier;
+  Player* player;
+  GameState gamestate = GameState::kStarting;
+
+  switch(gamestate){
+    case GameState::kStarting:{
+      InitCards(crupier.deck);
+      InitGame(&player, crupier, numPlayers);
+      Shuffle(crupier.deck);
+      break;
+    }
+    case GameState::kPlaying:{
+      static int currentCard = 0;
+      static bool started = false;
+      while(gamestate == GameState::kPlaying){
+        GiveHand(player, crupier, started, currentCard, numPlayers);
+      }
+      break;
+    }
+    case GameState::kWinned:{
+      
+      break;
+    }
+    case GameState::kLost:{
+      
+      break;
+    }
   }
+  
+  FreeMem(player);
   return 0;
 }
-
+void InitGame(Player** player, Crupier &crupier, int numPlayers){
+  *player = (Player*) malloc(sizeof(Player) * numPlayers);
+  for(int i = 0; i < numPlayers; i++){
+    (*(player) + i)->hand->cards = (Card)* malloc(sizeof(Card) * 2);
+  }
+  crupier.hand.cards = (Card)* malloc(sizeof(Card) * 2);
+}
 void InitCards(Deck& deck){
   for(int e = 0; e < Deck::kNSuits; e++){
     for(int i = 0; i < Deck::kNCards; i++){
@@ -67,26 +114,26 @@ void InitCards(Deck& deck){
       
       switch(i){
         case 10:{
-          deck.cards[i + e * Deck::kNCards].num = J;
+          deck.cards[i + e * Deck::kNCards].num = 'J';
           break;
         }
         case 11:{
-          deck.cards[i + e * Deck::kNCards].num = Q;
+          deck.cards[i + e * Deck::kNCards].num = 'Q';
           break;
         }
         case 12:{
-          deck.cards[i + e * Deck::kNCards].num = K;
+          deck.cards[i + e * Deck::kNCards].num = 'K';
           break;
         }
         default:{
-          deck.cards[i + e * Deck::kNCards].num = i + 1;
+          deck.cards[i + e * Deck::kNCards].num = (i + 1) * 48;
           break;
         }
       }
     }
   }
 }
-void Shuffle(Deck& deck){
+void ShuffleCards(Deck& deck){
   //Getting a record to check if that card is shuffled
   bool shuffled[Deck::kTotalCards];
   for(int i = 0; i < Deck::kTotalCards; i++){
@@ -108,4 +155,23 @@ void Shuffle(Deck& deck){
     deck.cards[number + suits * Deck::kNSuits] = card_1; 
   }
 }
-*/
+
+void GiveHand(Player* player, Crupier& crupier, bool started, int& currentCard, int numPlayers){
+  if(!started){
+    ShuffleCards(crupier.deck);
+
+    crupier.hand.(cards + currentCard) = crupier.deck.cards[currentCard++];
+    crupier.hand.(cards + currentCard) = crupier.deck.cards[currentCard++];
+
+    player.hand.(cards + currentCard) = crupier.deck.cards[currentCard++];
+    player.hand.(cards + currentCard) = crupier.deck.cards[currentCard++];
+  }
+}
+
+
+void FreeMem(Player* player){
+  for(int i = 0; i < Player::numHands; i++){
+    free(*player.hand.(cards + i));
+  }
+  free(player);
+}
