@@ -56,11 +56,11 @@ struct Crupier {
 
 void InitGame(Player** player, Crupier &crupier, int numPlayers);
 void InitCards(Deck& deck);
-void Shuffle(Deck& deck);
+void ShuffleCards(Deck& deck);
 
 void GiveHand(Player* player, Crupier& crupier, bool started, int& currentCard, int numPlayers);
 
-void FreeMem(Player* player);
+void FreeMem(Player* player, int numPlayers);
 
 int main(){
   srand(time(NULL));
@@ -74,7 +74,7 @@ int main(){
     case GameState::kStarting:{
       InitCards(crupier.deck);
       InitGame(&player, crupier, numPlayers);
-      Shuffle(crupier.deck);
+      ShuffleCards(crupier.deck);
       break;
     }
     case GameState::kPlaying:{
@@ -95,16 +95,20 @@ int main(){
     }
   }
   
-  FreeMem(player);
+  FreeMem(player, numPlayers);
   return 0;
 }
+
 void InitGame(Player** player, Crupier &crupier, int numPlayers){
   *player = (Player*) malloc(sizeof(Player) * numPlayers);
   for(int i = 0; i < numPlayers; i++){
-    (*(player) + i)->hand->cards = (Card)* malloc(sizeof(Card) * 2);
+    (*(player) + i)->hand = (Hand*) malloc(sizeof(Hand));
+    (*(player) + i)->hand->cards = (Card*) malloc(sizeof(Card) * 2);
+    (*(player) + i)->numHands = 1;
   }
-  crupier.hand.cards = (Card)* malloc(sizeof(Card) * 2);
+  crupier.hand.cards = (Card*) malloc(sizeof(Card) * 2);
 }
+
 void InitCards(Deck& deck){
   for(int e = 0; e < Deck::kNSuits; e++){
     for(int i = 0; i < Deck::kNCards; i++){
@@ -133,6 +137,7 @@ void InitCards(Deck& deck){
     }
   }
 }
+
 void ShuffleCards(Deck& deck){
   //Getting a record to check if that card is shuffled
   bool shuffled[Deck::kTotalCards];
@@ -160,18 +165,23 @@ void GiveHand(Player* player, Crupier& crupier, bool started, int& currentCard, 
   if(!started){
     ShuffleCards(crupier.deck);
 
-    crupier.hand.(cards + currentCard) = crupier.deck.cards[currentCard++];
-    crupier.hand.(cards + currentCard) = crupier.deck.cards[currentCard++];
+    //*crupier.hand.(cards + currentCard) = crupier.deck.cards[currentCard++];
 
-    player.hand.(cards + currentCard) = crupier.deck.cards[currentCard++];
-    player.hand.(cards + currentCard) = crupier.deck.cards[currentCard++];
+    for(int i = 0; i < numPlayers; i++){
+      (player + i)->hand->cards[currentCard] = crupier.deck.cards[currentCard++];
+    }
+    
   }
 }
 
 
-void FreeMem(Player* player){
-  for(int i = 0; i < Player::numHands; i++){
-    free(*player.hand.(cards + i));
+void FreeMem(Player* player, int numPlayers){
+  for(int i = 0; i < numPlayers; i++){
+    for(int e = 0; e < (player + i)->numHands; e++){
+      free(((player + i)->hand + e)->cards);
+    }
+    free((player + i)->hand);
   }
   free(player);
+  printf("Memoria Liberada");
 }
