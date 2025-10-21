@@ -84,21 +84,22 @@ void PrintCard(Card card);
 void HitOrStand(Player* player, Crupier& crupier, int numPlayers, int& currentCard, GameState& gamestate);
 void CrupierHitOrStand(Crupier& crupier, int& currentCard, GameState& gamestate);
 
-bool CalcHandWithAce(Hand hand);
+bool StandHandWithAce(Hand hand);
 bool CheckIfSplit(Player* player, Crupier& crupier, int& currentCard);
 void GetBestScore(Hand& hand);
 
 void WonOrLost(Player* player, int numPlayers, Crupier& crupier);
 void ContinuePlaying(bool& end, GameState& gamestate);
 
-void FreeMem(Player* player, int numPlayers);
+void AddCard(Hand& hand, Crupier& crupier, int& currentCard);
+void FreeMem(Player* player, int numPlayers, Crupier& crupier);
 
 int main(int argc, char** argv){
-  srand(time(NULL));
-  system("chcp 65001");
-  system("cls");
-  int numPlayers = argc;
-  if(argc == 0) numPlayers = 1;
+  int numPlayers = 1;
+  if(argc > 1){
+    numPlayers = atoi(argv[1]);
+    if(numPlayers > 6) numPlayers = 6;
+  }
 
   Crupier crupier;
   Player* player;
@@ -111,8 +112,8 @@ int main(int argc, char** argv){
   while(!end){
     switch(gamestate){
       case GameState::kStarting:{
-        InitCards(crupier.deck);
         InitGame(&player, crupier, numPlayers);
+        InitCards(crupier.deck);
         ShuffleCards(crupier.deck);
 
         GiveHand(player, crupier, currentCard, numPlayers);
@@ -126,7 +127,6 @@ int main(int argc, char** argv){
         break;
       }
       case GameState::kPlayersPlaying:{
-        static int currentCard = 0;
         HitOrStand(player, crupier, numPlayers, currentCard, gamestate);
 
         gamestate = GameState::kCrupierPlaying;
@@ -143,7 +143,7 @@ int main(int argc, char** argv){
       }
     }
   }
-  FreeMem(player, numPlayers);
+  FreeMem(player, numPlayers, crupier);
   return 0;
 }
 
@@ -176,6 +176,11 @@ int Hand::TotalScore(){
 }
 
 void InitGame(Player** player, Crupier &crupier, int numPlayers){
+  srand(time(NULL));
+  system("chcp 65001");
+  system("cls");
+
+
   *player = (Player*) malloc(sizeof(Player) * numPlayers);
   for(int i = 0; i < numPlayers; i++){
     (*(player) + i)->numHands = 1;
@@ -242,13 +247,13 @@ void ShuffleCards(Deck& deck){
       suits = rand() % Deck::kNSuits;
       number = rand() % Deck::kNCards;
     }while(shuffled[i] == true);
-
+    shuffled[i] = true;
     //Swapping both cards
     Card card_1 = deck.cards[i];
-    Card card_2 = deck.cards[number + suits * Deck::kNSuits];
+    Card card_2 = deck.cards[number + suits * Deck::kNCards];
 
     deck.cards[i] = card_2;
-    deck.cards[number + suits * Deck::kNSuits] = card_1; 
+    deck.cards[number + suits * Deck::kNCards] = card_1; 
   }
 }
 
@@ -329,7 +334,7 @@ void PrintfCardType(Card card){
   }
 }
 
-bool CalcHandWithAce(Hand hand){
+bool StandHandWithAce(Hand hand){
   int cardAnumber = 0;
   for(int e = 0; e < hand.numCards; e++){
     if(hand.cards[e].num == 'A' && cardAnumber == 0) cardAnumber++;
@@ -370,7 +375,7 @@ void GetBestScore(Hand& hand){
 
 bool CheckIfSplit(Player* player, Crupier& crupier, int& currentCard){
   if(player->hand->cards[0].num == player->hand->cards[1].num && player->numHands < 2 && (player->hand->gamble * 2) <= player->money){
-    printf("\nAPUESTA en Mano numero {1}: || %d$ ||", (player)->hand->gamble);
+    printf("\nAPUESTA en Mano numero {1}: || %d$ ||", player->hand->gamble);
     printf("\nMano numero {%d}: ", 1);
     PrintTotalCards((player)->hand[0]);
     printf("\nSplit");
@@ -409,66 +414,99 @@ void PrintGamble(Player* player, int whichHandIs){
   }
 }
 
+void AddCard(Hand& hand, Crupier& crupier, int& currentCard){
+  hand.numCards++;
+  hand.cards = (Card*) realloc(hand.cards, sizeof(Card) * hand.numCards);
+
+  hand.cards[hand.numCards - 1] = crupier.deck.cards[currentCard++];
+}
+//Function that makes all AI Player interactions...
 void HitOrStand(Player* player, Crupier& crupier, int numPlayers, int& currentCard, GameState& gamestate){
-  int everyPlayerEnded = 0;
+  //First it prints first crupier card
   printf(" --------------  Crupier  --------------");
   printf("\nMano de crupier: ");
   PrintCard(*crupier.hand.cards);;
   printf("[Hidden]\n\n");
 
+  //Then for every player checks if player can split. If he can, hand splits and he gets 2 hands with old hand 2 first cards
   for(int i = 0; i < numPlayers; i++){
-    printf("\n  ------------- Jugador %d -------------", i + 1);
+    printf("\n  ------------- Jugador %d - Balance %d$ -------------", i + 1, (player + i)->money + (player + i)->hand->gamble);
+    //Chekking if player can split
     CheckIfSplit((player + i), crupier, currentCard);
+    //For every player's hand
     for(int j = 0; j < (player + i)->numHands; j++){
+      //If player is still handing
       if((player + i)->hand->handstate == HandState::kHanding){
-        PrintGamble(player, j);
+        //Print player info
+        PrintGamble((player + i), j);
         printf("\nMano numero {%d}: ", j + 1);
         PrintTotalCards((player + i)->hand[j]);
+
+        //Here Hit or Stand (or Double) loop is initiated
         int hitorstand = 0;
+        //While variable != 2 or player score is under 17, he will continue to get cards
         while(hitorstand != 2 && (player + i)->hand[j].TotalScore() < 17){
-          if(CalcHandWithAce((player + i)->hand[j])){
+          //This function checks every loop if player has 'A' and that score can get him to 17
+          if(StandHandWithAce((player + i)->hand[j])){
             hitorstand = 2;
             (player + i)->hand->handstate = HandState::kEndedHanding;
           }else{
-            if((player + i)->hand[j].TotalScore() < 17){
-              (player + i)->hand[j].numCards++;
-              (player + i)->hand[j].cards = (Card*) realloc((player + i)->hand[j].cards, sizeof(Card) * (player + i)->hand[j].numCards);
+            //This part checks best cases to split gamble, if score is under 11 and crupier first card is under 6. 
+            //Also checks if player has enought money to double gamble
+            if((player + i)->hand[j].TotalScore() <= 11 && atoi(&crupier.hand.cards->num) < 6 && (player + i)->money >= (player + i)->hand[j].gamble){
+              //This part adds cards to player hand directly from the crupier's deck
+              AddCard((player + i)->hand[j], crupier, currentCard);
 
-              (player + i)->hand[j].cards[(player + i)->hand[j].numCards - 1] = crupier.deck.cards[currentCard++];
+              //Adding double money to that hand
+              (player + i)->money -= (player + i)->hand[j].gamble;
+              (player + i)->hand[j].gamble *= 2;
 
+              //Printing info
+              printf("\nDouble: ");
+              PrintCard((player + i)->hand[j].cards[(player + i)->hand[j].numCards - 1]);
+              printf("\nMano numero {%d}: ", j + 1);
+              PrintTotalCards((player + i)->hand[j]);
+            }else if((player + i)->hand[j].TotalScore() < 17){  //If player score is under 17 he will always Hit
+              //This part adds cards to player hand directly from the crupier's deck
+              AddCard((player + i)->hand[j], crupier, currentCard);
+
+              //Printing info
               printf("\nHit: ");
               PrintCard((player + i)->hand[j].cards[(player + i)->hand[j].numCards - 1]);
               printf("\nMano numero {%d}: ", j + 1);
               PrintTotalCards((player + i)->hand[j]);
             }else{
+              //If player score is over 17 his hand ends gambling
               hitorstand = 2;
               (player + i)->hand->handstate = HandState::kEndedHanding;
             }
           }
         }
+        //This function works if player has A and gets the better score to him to win
         GetBestScore((player + i)->hand[j]);
         printf("\nStand [<< %d >>]\n", (player + i)->hand[j].TotalScore());
       }
     }
   }
 }
-
+//Function that calcs crupier interactions
 void CrupierHitOrStand(Crupier& crupier, int& currentCard, GameState& gamestate){
-  //CRUPIER HIT OR STAND
+  //Printing crupier info
   printf("\n\n  --------------  Crupier  --------------");
   printf("\nMano de crupier: ");
   PrintTotalCards(crupier.hand);
+  //Starting Hit or Stand loop on crupier, until he has 17
   int crupierHitOrStand = 0;
   while(crupierHitOrStand != 2 && crupier.hand.TotalScore() < 17){
-    if(CalcHandWithAce(crupier.hand)){
+    //If crupier gets to 17 with an A loop stops
+    if(StandHandWithAce(crupier.hand)){
       crupierHitOrStand = 2;
       printf("\nStand");
     }else{
+      //While his hand is under 17 he will always play Hit
       if(crupier.hand.TotalScore() < 17){
-        crupier.hand.numCards++;
-        crupier.hand.cards = (Card*) realloc(crupier.hand.cards, sizeof(Card) * crupier.hand.numCards);
-
-        crupier.hand.cards[crupier.hand.numCards - 1] = crupier.deck.cards[currentCard++];
+        //This function add another card to hand
+        AddCard(crupier.hand, crupier, currentCard);
 
         printf("\nHit: ");
         PrintCard(crupier.hand.cards[crupier.hand.numCards - 1]);
@@ -484,7 +522,6 @@ void CrupierHitOrStand(Crupier& crupier, int& currentCard, GameState& gamestate)
   printf("\nStand [<< %d >>]", crupier.hand.TotalScore());
   gamestate = GameState::kEnded;
 } 
-
 void WonOrLost(Player* player, int numPlayers, Crupier& crupier){
   printf("\n\n\n");
   for(int i = 0; i < numPlayers; i++){
@@ -514,6 +551,10 @@ void WonOrLost(Player* player, int numPlayers, Crupier& crupier){
         }
       }
     }
+    if((player + i)->money < 20){
+      (player + i)->money += (500 - (player + i)->money);
+      printf("\nJugador %d sin saldo, se te han añadido 500$ de compensacion <<Balance : %d>>", i + 1, (player + i)->money);
+    }
   }
 }
 
@@ -536,7 +577,7 @@ void ContinuePlaying(bool& end, GameState& gamestate){
   }
 }
 
-void FreeMem(Player* player, int numPlayers){
+void FreeMem(Player* player, int numPlayers, Crupier& crupier){
   for(int i = 0; i < numPlayers; i++){
     for(int e = 0; e < (player + i)->numHands; e++){
       free(((player + i)->hand + e)->cards);
@@ -544,5 +585,9 @@ void FreeMem(Player* player, int numPlayers){
     free((player + i)->hand);
   }
   free(player);
+
+  free(crupier.hand.cards);
+
   printf("\n\n\n\n\n\nEnded Correctly");
+  
 }
