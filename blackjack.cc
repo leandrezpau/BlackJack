@@ -73,14 +73,19 @@ void ShuffleCards(Deck& deck);
 
 void GiveHand(Player* player, Crupier& crupier, int& currentCard, int numPlayers);
 
-void GetBestScore(Hand& hand);
 
-bool CalcHandWithAce(Hand hand);
+
 int PrintTotalCards(Hand hand);
 void PrintfCardType(Card card);
+void PrintGamble(Player* player, int whichHandIs);
+void PrintCard(Card card);
 
 void HitOrStand(Player* player, Crupier& crupier, int numPlayers, int& currentCard, GameState& gamestate);
 void CrupierHitOrStand(Crupier& crupier, int& currentCard, GameState& gamestate);
+
+bool CalcHandWithAce(Hand hand);
+bool CheckIfSplit(Player* player, Crupier& crupier, int& currentCard);
+void GetBestScore(Hand& hand);
 
 void WonOrLost(Player* player, int numPlayers, Crupier& crupier);
 
@@ -307,6 +312,7 @@ void PrintfCardType(Card card){
     }
   }
 }
+
 bool CalcHandWithAce(Hand hand){
   int cardAnumber = 0;
   for(int e = 0; e < hand.numCards; e++){
@@ -320,6 +326,7 @@ bool CalcHandWithAce(Hand hand){
 
   return false;
 }
+
 void GetBestScore(Hand& hand){
   int cardAnumber = 0;
   for(int e = 0; e < hand.numCards; e++){
@@ -344,6 +351,7 @@ void GetBestScore(Hand& hand){
     }
   } 
 }
+
 bool CheckIfSplit(Player* player, Crupier& crupier, int& currentCard){
   if(player->hand->cards[0].num == player->hand->cards[1].num && player->numHands < 2 && (player->hand->gamble * 2) <= player->money){
     printf("\nAPUESTA en Mano numero {1}: || %d$ ||", (player)->hand->gamble);
@@ -368,6 +376,7 @@ bool CheckIfSplit(Player* player, Crupier& crupier, int& currentCard){
   }
   return false;
 }
+
 void PrintGamble(Player* player, int whichHandIs){
   switch((player)->numHands){
     case 1:{
@@ -383,6 +392,7 @@ void PrintGamble(Player* player, int whichHandIs){
     
   }
 }
+
 void HitOrStand(Player* player, Crupier& crupier, int numPlayers, int& currentCard, GameState& gamestate){
   int everyPlayerEnded = 0;
   printf(" --------------  Crupier  --------------");
@@ -426,6 +436,7 @@ void HitOrStand(Player* player, Crupier& crupier, int numPlayers, int& currentCa
     }
   }
 }
+
 void CrupierHitOrStand(Crupier& crupier, int& currentCard, GameState& gamestate){
   //CRUPIER HIT OR STAND
   printf("\n\n  --------------  Crupier  --------------");
@@ -488,7 +499,6 @@ void WonOrLost(Player* player, int numPlayers, Crupier& crupier){
     }
   }
 }
-
 
 void FreeMem(Player* player, int numPlayers){
   for(int i = 0; i < numPlayers; i++){
