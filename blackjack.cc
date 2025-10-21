@@ -32,13 +32,16 @@ enum HandState {
   kTie
 };
 
-struct Card {
+class Card {
+public:
+
   char num;
   CardType type;
   bool revealed;
 };
 
-struct Deck {
+class Deck {
+public:
   const static int kNSuits = 4;
   const static int kNCards = 13;
   const static int kTotalCards = kNSuits * kNCards;
@@ -46,7 +49,8 @@ struct Deck {
   Card cards[kNSuits * kNCards];
 };
 
-struct Hand {
+class Hand {
+public:
   int numCards;
   Card* cards;
   
@@ -57,14 +61,16 @@ struct Hand {
   int TotalScore();
 };
 
-struct Player {
+class Player {
+public:
   int numHands;
   Hand* hand;
 
   int money;
 };
 
-struct Crupier {
+class Crupier {
+public:
   Deck deck;
   Hand hand;
 };
